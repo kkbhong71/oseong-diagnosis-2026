@@ -1,0 +1,1223 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>오성중학교 2026학년도 기초학력 진단평가 분석 대시보드</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<style>
+  * { font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif; }
+  .gradient-bg { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+  .card-hover { transition: all 0.3s ease; }
+  .card-hover:hover { transform: translateY(-4px); box-shadow: 0 20px 40px rgba(0,0,0,0.1); }
+  .tab-active { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+  .scrollbar-hide::-webkit-scrollbar { display: none; }
+  .fade-in { animation: fadeIn 0.5s ease-in; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+  .badge-red { background: #fee2e2; color: #dc2626; }
+  .badge-orange { background: #fed7aa; color: #ea580c; }
+  .badge-yellow { background: #fef3c7; color: #d97706; }
+  .badge-blue { background: #dbeafe; color: #2563eb; }
+  .badge-green { background: #d1fae5; color: #059669; }
+  .badge-purple { background: #e9d5ff; color: #7c3aed; }
+  .priority-critical { border-left: 4px solid #dc2626; }
+  .priority-high { border-left: 4px solid #ea580c; }
+  .priority-medium { border-left: 4px solid #d97706; }
+  .priority-low { border-left: 4px solid #059669; }
+  /* ==================== 인쇄 전용 스타일 ==================== */
+  @media print {
+    /* ① 색상 강제 유지 (Chrome, Safari, Firefox 모두 대응) */
+    * {
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+      color-adjust: exact !important;
+    }
+
+    /* ② 불필요한 UI 숨기기 */
+    .no-print { display: none !important; }
+    body { background: white !important; font-size: 10.5pt; }
+
+    /* ③ "전체 보고서" 모드: 모든 탭 펼치기 */
+    body.print-all .tab-content {
+      display: block !important;
+    }
+    body.print-all .tab-content.hidden {
+      display: block !important;
+    }
+    /* 각 탭 시작 전 페이지 나눔 (첫 탭 제외) */
+    body.print-all .tab-content + .tab-content {
+      page-break-before: always;
+    }
+    /* 전체 모드에서 각 탭에 제목 자동 삽입 */
+    body.print-all .tab-content::before {
+      content: attr(data-print-title);
+      display: block;
+      font-size: 18pt;
+      font-weight: 700;
+      color: #4f46e5;
+      margin-bottom: 16px;
+      padding-bottom: 8px;
+      border-bottom: 3px solid #4f46e5;
+    }
+
+    /* ④ 페이지 분할 최적화 - 카드 중간 끊김 방지 */
+    .bg-white, .card-hover, .priority-critical, .priority-high,
+    .priority-medium, .priority-low, .rounded-2xl, .rounded-xl {
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+    h1, h2, h3 {
+      page-break-after: avoid;
+      break-after: avoid;
+    }
+
+    /* ⑤ 차트 크기 제어 (인쇄 시 과다 크기 방지) */
+    canvas {
+      max-height: 260px !important;
+      width: 100% !important;
+    }
+
+    /* ⑥ 인쇄용 헤더 자동 삽입 */
+    .print-header {
+      display: block !important;
+      text-align: center;
+      margin-bottom: 20px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid #333;
+    }
+    .print-header h1 {
+      font-size: 16pt;
+      font-weight: 700;
+      margin: 0;
+    }
+    .print-header p {
+      font-size: 10pt;
+      color: #666;
+      margin: 4px 0 0;
+    }
+
+    /* ⑦ 여백 및 페이지 설정 */
+    @page {
+      size: A4;
+      margin: 15mm 12mm;
+    }
+
+    /* ⑧ 링크 URL 숨김 (지저분해짐 방지) */
+    a[href]::after { content: none !important; }
+  }
+
+  /* 인쇄 전용 요소는 화면에서 숨김 */
+  .print-header { display: none; }
+</style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+<!-- 로그인 화면 -->
+<div id="loginScreen" class="fixed inset-0 gradient-bg flex items-center justify-center z-50">
+  <div class="bg-white rounded-3xl shadow-2xl p-10 w-full max-w-md fade-in">
+    <div class="text-center mb-8">
+      <div class="inline-block bg-gradient-to-br from-indigo-500 to-purple-600 p-4 rounded-2xl mb-4">
+        <svg class="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+        </svg>
+      </div>
+      <h1 class="text-2xl font-bold text-gray-800">오성중학교</h1>
+      <p class="text-sm text-gray-500 mt-1">2026학년도 기초학력 진단평가 분석 대시보드</p>
+      <p class="text-xs text-gray-400 mt-2">🔒 관리자 전용 (개인정보 보호)</p>
+    </div>
+    <div class="space-y-4">
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">관리자 비밀번호</label>
+        <input type="password" id="passwordInput" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-indigo-500 focus:outline-none transition"
+               placeholder="비밀번호를 입력하세요" onkeypress="if(event.key==='Enter') checkLogin()">
+      </div>
+      <div id="errorMsg" class="hidden text-sm text-red-500 text-center"></div>
+      <button onclick="checkLogin()" class="w-full gradient-bg text-white py-3 rounded-xl font-semibold hover:opacity-90 transition shadow-lg">
+        접속하기
+      </button>
+    </div>
+    <div class="mt-6 pt-6 border-t border-gray-100 text-center">
+      <p class="text-xs text-gray-400">이 시스템의 모든 데이터는 교육 목적으로만 사용됩니다</p>
+      <p class="text-xs text-gray-400 mt-1">Developed by <span class="font-semibold text-indigo-600">K.G.B</span></p>
+    </div>
+  </div>
+</div>
+
+<!-- 메인 대시보드 -->
+<div id="mainDashboard" class="hidden">
+  <!-- 인쇄 전용 헤더 (화면에는 안 보임) -->
+  <div class="print-header">
+    <h1>오성중학교 2026학년도 기초학력 진단평가 분석 보고서</h1>
+    <p id="printDate"></p>
+    <p style="font-size: 9pt; color: #999;">🔒 관리자 전용 기밀 문서 · Developed by K.G.B</p>
+  </div>
+  <!-- 헤더 -->
+  <header class="gradient-bg text-white shadow-lg no-print">
+    <div class="max-w-7xl mx-auto px-4 py-6">
+      <div class="flex items-center justify-between flex-wrap gap-4">
+        <div>
+          <h1 class="text-2xl md:text-3xl font-bold">📊 오성중학교 기초학력 진단평가 대시보드</h1>
+          <p class="text-sm md:text-base text-indigo-100 mt-1">2026학년도 | 전교생 102명 대상 종합 분석</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <div class="relative no-print" id="printMenuWrapper">
+            <button onclick="togglePrintMenu()" class="bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-1">
+              🖨️ 인쇄 <span class="text-xs">▼</span>
+            </button>
+            <div id="printMenu" class="hidden absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-2xl overflow-hidden z-50">
+              <button onclick="printCurrentTab()" class="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-indigo-50 transition border-b border-gray-100">
+                <div class="font-semibold">📄 현재 탭만 인쇄</div>
+                <div class="text-xs text-gray-500 mt-0.5">보고 있는 화면만 출력</div>
+              </button>
+              <button onclick="printAllTabs()" class="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-indigo-50 transition">
+                <div class="font-semibold">📚 전체 종합 보고서</div>
+                <div class="text-xs text-gray-500 mt-0.5">6개 탭 전체를 한번에 출력</div>
+              </button>
+            </div>
+          </div>
+          <button onclick="logout()" class="bg-red-500/80 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition">
+            🚪 로그아웃
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- 탭 네비게이션 -->
+  <nav class="bg-white shadow-sm sticky top-0 z-40 no-print">
+    <div class="max-w-7xl mx-auto px-4">
+      <div class="flex overflow-x-auto scrollbar-hide gap-2 py-3">
+        <button onclick="switchTab('overview')" data-tab="overview" class="tab-btn tab-active px-5 py-2.5 rounded-lg font-medium whitespace-nowrap transition text-sm">
+          📊 종합 현황
+        </button>
+        <button onclick="switchTab('class')" data-tab="class" class="tab-btn bg-gray-100 text-gray-700 hover:bg-gray-200 px-5 py-2.5 rounded-lg font-medium whitespace-nowrap transition text-sm">
+          🏫 학급별 분석
+        </button>
+        <button onclick="switchTab('subject')" data-tab="subject" class="tab-btn bg-gray-100 text-gray-700 hover:bg-gray-200 px-5 py-2.5 rounded-lg font-medium whitespace-nowrap transition text-sm">
+          📚 교과별 분석
+        </button>
+        <button onclick="switchTab('student')" data-tab="student" class="tab-btn bg-gray-100 text-gray-700 hover:bg-gray-200 px-5 py-2.5 rounded-lg font-medium whitespace-nowrap transition text-sm">
+          👤 학생별 분석
+        </button>
+        <button onclick="switchTab('insight')" data-tab="insight" class="tab-btn bg-gray-100 text-gray-700 hover:bg-gray-200 px-5 py-2.5 rounded-lg font-medium whitespace-nowrap transition text-sm">
+          💡 교사 인사이트
+        </button>
+        <button onclick="switchTab('strategy')" data-tab="strategy" class="tab-btn bg-gray-100 text-gray-700 hover:bg-gray-200 px-5 py-2.5 rounded-lg font-medium whitespace-nowrap transition text-sm">
+          🎯 향후 대책
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- 컨텐츠 영역 -->
+  <main class="max-w-7xl mx-auto px-4 py-6">
+
+    <!-- 1. 종합 현황 탭 -->
+    <section id="tab-overview" class="tab-content fade-in" data-print-title="📊 1. 종합 현황">
+      <!-- 핵심 지표 카드 -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <div class="bg-white rounded-2xl p-5 shadow-sm card-hover priority-critical">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-medium text-gray-500">전체 대상</span>
+            <span class="text-2xl">👥</span>
+          </div>
+          <div class="text-3xl font-bold text-gray-800">102<span class="text-base text-gray-400">명</span></div>
+          <div class="text-xs text-gray-500 mt-1">6개 학급</div>
+        </div>
+        <div class="bg-white rounded-2xl p-5 shadow-sm card-hover priority-high">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-medium text-gray-500">기초학력 미달</span>
+            <span class="text-2xl">📖</span>
+          </div>
+          <div class="text-3xl font-bold text-orange-600">13<span class="text-base text-gray-400">명</span></div>
+          <div class="text-xs text-orange-500 mt-1">12.7% (국·수·영)</div>
+        </div>
+        <div class="bg-white rounded-2xl p-5 shadow-sm card-hover priority-high">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-medium text-gray-500">3R's 미달</span>
+            <span class="text-2xl">✏️</span>
+          </div>
+          <div class="text-3xl font-bold text-red-600">11<span class="text-base text-gray-400">명</span></div>
+          <div class="text-xs text-red-500 mt-1">10.8% (읽·쓰·셈)</div>
+        </div>
+        <div class="bg-white rounded-2xl p-5 shadow-sm card-hover priority-medium">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-medium text-gray-500">중복 지원 필요</span>
+            <span class="text-2xl">⚠️</span>
+          </div>
+          <div class="text-3xl font-bold text-yellow-600" id="duplicateCount">-</div>
+          <div class="text-xs text-yellow-600 mt-1">2개 이상 영역 미달</div>
+        </div>
+      </div>
+
+      <!-- 주요 발견 사항 -->
+      <div class="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-2xl p-6 mb-6 border border-indigo-100">
+        <h2 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+          <span>🔍</span> 주요 발견 사항 (Executive Summary)
+        </h2>
+        <div class="grid md:grid-cols-2 gap-4">
+          <div class="bg-white rounded-xl p-4">
+            <div class="flex items-start gap-3">
+              <span class="text-2xl">🚨</span>
+              <div>
+                <div class="font-semibold text-red-600 text-sm mb-1">최우선 개입 대상</div>
+                <div class="text-sm text-gray-700"><strong>박윤호(3-2)</strong> 학생은 읽기·쓰기·셈하기 <strong>3개 영역 모두 미달</strong>로 즉각적·집중적 개별 지원이 필요합니다.</div>
+              </div>
+            </div>
+          </div>
+          <div class="bg-white rounded-xl p-4">
+            <div class="flex items-start gap-3">
+              <span class="text-2xl">📐</span>
+              <div>
+                <div class="font-semibold text-orange-600 text-sm mb-1">수학 교과 집중 취약</div>
+                <div class="text-sm text-gray-700">수학 미달자 <strong>9명(8.8%)</strong>으로 전 교과 중 가장 많으며, 특히 <strong>2학년에 6명 집중</strong>되어 학년 단위 대책 필요.</div>
+              </div>
+            </div>
+          </div>
+          <div class="bg-white rounded-xl p-4">
+            <div class="flex items-start gap-3">
+              <span class="text-2xl">🧮</span>
+              <div>
+                <div class="font-semibold text-red-600 text-sm mb-1">셈하기 기초 결손 심각</div>
+                <div class="text-sm text-gray-700">기초 셈하기 미달 <strong>10명(9.8%)</strong>은 전 학년 분포되어 있어, 초등 연계 기초 수학 프로그램이 시급합니다.</div>
+              </div>
+            </div>
+          </div>
+          <div class="bg-white rounded-xl p-4">
+            <div class="flex items-start gap-3">
+              <span class="text-2xl">🏫</span>
+              <div>
+                <div class="font-semibold text-purple-600 text-sm mb-1">3-2반 집중 관리 필요</div>
+                <div class="text-sm text-gray-700"><strong>3-2반</strong>에 기초학력 1명 + 3R's 5명이 집중되어 담임 주도 학급 단위 지원책이 요구됩니다.</div>
+              </div>
+            </div>
+          </div>
+          <div class="bg-white rounded-xl p-4">
+            <div class="flex items-start gap-3">
+              <span class="text-2xl">🔗</span>
+              <div>
+                <div class="font-semibold text-blue-600 text-sm mb-1">교과 중복 미달자 주의</div>
+                <div class="text-sm text-gray-700"><strong>한다윤, 안소윤, 김현웅, 정영민, 한준희</strong> 5명은 2개 교과 이상 미달로 종합적 학습 지원이 필요합니다.</div>
+              </div>
+            </div>
+          </div>
+          <div class="bg-white rounded-xl p-4">
+            <div class="flex items-start gap-3">
+              <span class="text-2xl">✅</span>
+              <div>
+                <div class="font-semibold text-green-600 text-sm mb-1">긍정적 신호</div>
+                <div class="text-sm text-gray-700"><strong>1-2반</strong>은 기초학력 미달자 0명으로 우수한 출발선을 보이며, <strong>읽기 영역</strong>은 전교 2명으로 안정적입니다.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 시각화 차트 -->
+      <div class="grid md:grid-cols-2 gap-6 mb-6">
+        <div class="bg-white rounded-2xl p-6 shadow-sm">
+          <h3 class="text-base font-bold text-gray-800 mb-4">📊 영역별 미달 학생 수</h3>
+          <div class="h-64"><canvas id="overviewChart"></canvas></div>
+        </div>
+        <div class="bg-white rounded-2xl p-6 shadow-sm">
+          <h3 class="text-base font-bold text-gray-800 mb-4">🏫 학급별 미달 학생 분포</h3>
+          <div class="h-64"><canvas id="classChart"></canvas></div>
+        </div>
+      </div>
+
+      <!-- 통합지원실 알림 -->
+      <div class="bg-blue-50 rounded-2xl p-5 border border-blue-200">
+        <h3 class="font-bold text-blue-800 mb-2 flex items-center gap-2">
+          <span>ℹ️</span> 평가 제외 학생 (통합지원실 3명)
+        </h3>
+        <div class="flex flex-wrap gap-2">
+          <span class="badge-blue px-3 py-1 rounded-full text-sm font-medium">2학년 서준호</span>
+          <span class="badge-blue px-3 py-1 rounded-full text-sm font-medium">3학년 정날린</span>
+          <span class="badge-blue px-3 py-1 rounded-full text-sm font-medium">3학년 양대원</span>
+        </div>
+        <p class="text-xs text-blue-600 mt-2">※ 통합지원실 학생들은 개별 교육 계획(IEP)에 따라 별도 지원이 이루어집니다.</p>
+      </div>
+    </section>
+
+    <!-- 2. 학급별 분석 탭 -->
+    <section id="tab-class" class="tab-content hidden fade-in" data-print-title="🏫 2. 학급별 분석">
+      <div class="bg-white rounded-2xl p-6 shadow-sm mb-6">
+        <h2 class="text-xl font-bold text-gray-800 mb-4">🏫 학급별 기초학력 미달 현황</h2>
+        <p class="text-sm text-gray-600 mb-4">각 학급 담임교사가 자기 학급의 학습 지원 대상을 한눈에 파악할 수 있습니다.</p>
+        <div class="h-80"><canvas id="classDetailChart"></canvas></div>
+      </div>
+
+      <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-4" id="classCards"></div>
+    </section>
+
+    <!-- 3. 교과별 분석 탭 -->
+    <section id="tab-subject" class="tab-content hidden fade-in" data-print-title="📚 3. 교과별 분석">
+      <div class="grid md:grid-cols-2 gap-6 mb-6">
+        <div class="bg-white rounded-2xl p-6 shadow-sm">
+          <h2 class="text-lg font-bold text-gray-800 mb-4">📖 기초학력 진단고사 (교과)</h2>
+          <div class="h-64"><canvas id="subjectAcademicChart"></canvas></div>
+        </div>
+        <div class="bg-white rounded-2xl p-6 shadow-sm">
+          <h2 class="text-lg font-bold text-gray-800 mb-4">✏️ 3R's 평가 (기초 문해·수리)</h2>
+          <div class="h-64"><canvas id="subject3rsChart"></canvas></div>
+        </div>
+      </div>
+
+      <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-4" id="subjectCards"></div>
+    </section>
+
+    <!-- 4. 학생별 분석 탭 -->
+    <section id="tab-student" class="tab-content hidden fade-in" data-print-title="👤 4. 학생별 분석">
+      <div class="bg-white rounded-2xl p-6 shadow-sm mb-6">
+        <div class="flex flex-wrap items-center justify-between gap-4 mb-4">
+          <div>
+            <h2 class="text-xl font-bold text-gray-800">👤 학생별 상세 분석</h2>
+            <p class="text-sm text-gray-600 mt-1">개별 학생의 모든 취약 영역을 종합적으로 파악합니다.</p>
+          </div>
+          <div class="flex gap-2">
+            <select id="studentFilter" onchange="renderStudents()" class="px-3 py-2 border rounded-lg text-sm">
+              <option value="all">전체 학생</option>
+              <option value="critical">3개 영역 이상 미달 (최우선)</option>
+              <option value="high">2개 영역 미달 (고위험)</option>
+              <option value="single">1개 영역 미달</option>
+            </select>
+            <select id="gradeFilter" onchange="renderStudents()" class="px-3 py-2 border rounded-lg text-sm">
+              <option value="all">전체 학년</option>
+              <option value="1">1학년</option>
+              <option value="2">2학년</option>
+              <option value="3">3학년</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-4" id="studentCards"></div>
+    </section>
+
+    <!-- 5. 교사 인사이트 탭 -->
+    <section id="tab-insight" class="tab-content hidden fade-in" data-print-title="💡 5. 교사 인사이트">
+      <!-- 담임교사 인사이트 -->
+      <div class="bg-white rounded-2xl p-6 shadow-sm mb-6">
+        <h2 class="text-xl font-bold text-gray-800 mb-4">👩‍🏫 담임교사용 인사이트</h2>
+        <p class="text-sm text-gray-600 mb-4">각 담임교사가 자기 학급 학생들의 학습 현황을 파악하고 구체적 지원 방안을 수립할 수 있도록 제공합니다.</p>
+        <div id="homeroomInsights" class="space-y-4"></div>
+      </div>
+
+      <!-- 교과교사 인사이트 -->
+      <div class="bg-white rounded-2xl p-6 shadow-sm">
+        <h2 class="text-xl font-bold text-gray-800 mb-4">📚 교과교사용 인사이트</h2>
+        <p class="text-sm text-gray-600 mb-4">각 교과담당 교사가 미달 학생들의 학년·학급 분포를 파악하여 맞춤형 수업 설계를 할 수 있도록 제공합니다.</p>
+        <div id="subjectInsights" class="space-y-4"></div>
+      </div>
+    </section>
+
+    <!-- 6. 향후 대책 탭 -->
+    <section id="tab-strategy" class="tab-content hidden fade-in" data-print-title="🎯 6. 향후 대책">
+      <div class="space-y-6">
+
+        <!-- 단계별 개입 전략 -->
+        <div class="bg-white rounded-2xl p-6 shadow-sm">
+          <h2 class="text-xl font-bold text-gray-800 mb-4">🎯 단계별 개입 전략 (Tiered Intervention)</h2>
+          <p class="text-sm text-gray-600 mb-5">학습 결손 수준에 따라 차별화된 지원 강도를 적용합니다.</p>
+
+          <div class="grid md:grid-cols-3 gap-4">
+            <div class="priority-critical bg-red-50 rounded-xl p-5">
+              <div class="flex items-center gap-2 mb-3">
+                <span class="text-2xl">🚨</span>
+                <h3 class="font-bold text-red-700">Tier 3: 집중 개별 지원</h3>
+              </div>
+              <div class="text-sm text-red-900 space-y-2">
+                <p><strong>대상:</strong> 3개 영역 이상 미달 (박윤호)</p>
+                <p><strong>빈도:</strong> 주 5회, 1:1 개별 지도</p>
+                <p><strong>방법:</strong></p>
+                <ul class="list-disc ml-4 space-y-1 text-xs">
+                  <li>교감 주관 개별교육계획 수립</li>
+                  <li>기초문해·수해력 진단 정밀검사 실시</li>
+                  <li>학습 멘토(외부 전문가) 연계</li>
+                  <li>학부모 상담 및 가정 학습 지원</li>
+                  <li>2주 단위 진척도 점검</li>
+                </ul>
+              </div>
+            </div>
+
+            <div class="priority-high bg-orange-50 rounded-xl p-5">
+              <div class="flex items-center gap-2 mb-3">
+                <span class="text-2xl">⚠️</span>
+                <h3 class="font-bold text-orange-700">Tier 2: 소집단 지원</h3>
+              </div>
+              <div class="text-sm text-orange-900 space-y-2">
+                <p><strong>대상:</strong> 2개 영역 미달 (5명)</p>
+                <p><strong>빈도:</strong> 주 2-3회, 3-5명 소집단</p>
+                <p><strong>방법:</strong></p>
+                <ul class="list-disc ml-4 space-y-1 text-xs">
+                  <li>방과후 기초학력 향상 프로그램</li>
+                  <li>교과별 맞춤 보충 교재 활용</li>
+                  <li>에듀테크 도구 활용 (AI 학습앱)</li>
+                  <li>학교 자체 "오성 연산 마스터" 투입</li>
+                  <li>월 1회 진척도 평가</li>
+                </ul>
+              </div>
+            </div>
+
+            <div class="priority-medium bg-yellow-50 rounded-xl p-5">
+              <div class="flex items-center gap-2 mb-3">
+                <span class="text-2xl">💡</span>
+                <h3 class="font-bold text-yellow-700">Tier 1: 교실 내 지원</h3>
+              </div>
+              <div class="text-sm text-yellow-900 space-y-2">
+                <p><strong>대상:</strong> 1개 영역 미달</p>
+                <p><strong>빈도:</strong> 교과 수업 중 상시</p>
+                <p><strong>방법:</strong></p>
+                <ul class="list-disc ml-4 space-y-1 text-xs">
+                  <li>수업 중 개별 지도 및 피드백</li>
+                  <li>수준별 과제 제공 (차별화 수업)</li>
+                  <li>또래 멘토링 (peer tutoring)</li>
+                  <li>가정 학습 가이드 제공</li>
+                  <li>분기별 재진단 평가</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 교과별 구체 대책 -->
+        <div class="bg-white rounded-2xl p-6 shadow-sm">
+          <h2 class="text-xl font-bold text-gray-800 mb-4">📘 교과별 구체 대책</h2>
+          <div class="space-y-4">
+
+            <div class="border-l-4 border-red-500 bg-red-50 rounded-r-xl p-5">
+              <h3 class="font-bold text-red-700 text-lg mb-2">🧮 수학 (9명 + 셈하기 10명) - 최우선 교과</h3>
+              <div class="grid md:grid-cols-2 gap-4 text-sm">
+                <div>
+                  <div class="font-semibold text-red-800 mb-1">단기 대책 (1학기)</div>
+                  <ul class="list-disc ml-5 space-y-1 text-gray-700">
+                    <li>2학년 수학 보충반 별도 편성 (6명 집중)</li>
+                    <li>초등 4-6학년 수학 연계 진단 실시</li>
+                    <li>"오성 연산 마스터" 앱 매일 15분 운영</li>
+                    <li>연산 부진 원인별 맞춤 워크시트</li>
+                  </ul>
+                </div>
+                <div>
+                  <div class="font-semibold text-red-800 mb-1">중장기 대책 (연간)</div>
+                  <ul class="list-disc ml-5 space-y-1 text-gray-700">
+                    <li>수학 교과 수업 내 스캐폴딩 강화</li>
+                    <li>학년별 기초 개념 체크리스트 운영</li>
+                    <li>수학 불안 해소 프로그램 병행</li>
+                    <li>학부모 대상 가정 연산 학습법 안내</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            <div class="border-l-4 border-orange-500 bg-orange-50 rounded-r-xl p-5">
+              <h3 class="font-bold text-orange-700 text-lg mb-2">🌐 영어 (6명) - 2학년 집중 관리</h3>
+              <div class="grid md:grid-cols-2 gap-4 text-sm">
+                <div>
+                  <div class="font-semibold text-orange-800 mb-1">단기 대책</div>
+                  <ul class="list-disc ml-5 space-y-1 text-gray-700">
+                    <li>알파벳·파닉스 기초 재진단 실시</li>
+                    <li>영어 기초 어휘 300 집중 학습</li>
+                    <li>교감 개발 "English Quest" 앱 활용</li>
+                    <li>영어 교과 보충 수업 주 2회</li>
+                  </ul>
+                </div>
+                <div>
+                  <div class="font-semibold text-orange-800 mb-1">중장기 대책</div>
+                  <ul class="list-disc ml-5 space-y-1 text-gray-700">
+                    <li>Web Speech TTS 활용 듣기·말하기 강화</li>
+                    <li>XP·뱃지 게이미피케이션으로 동기 유발</li>
+                    <li>원어민 보조교사 개별 지도 연계</li>
+                    <li>영어 부진 원인 심층 분석</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            <div class="border-l-4 border-purple-500 bg-purple-50 rounded-r-xl p-5">
+              <h3 class="font-bold text-purple-700 text-lg mb-2">📚 국어 (3명) + 읽기·쓰기 (5명) - 문해력 종합 관리</h3>
+              <div class="grid md:grid-cols-2 gap-4 text-sm">
+                <div>
+                  <div class="font-semibold text-purple-800 mb-1">단기 대책</div>
+                  <ul class="list-disc ml-5 space-y-1 text-gray-700">
+                    <li>음운 변동·문법 기초 진단</li>
+                    <li>"올바른 언어생활" 자기주도 학습 활용</li>
+                    <li>읽기 유창성·독해력 심층 평가</li>
+                    <li>한글 타자 연습 게임으로 쓰기 자동화</li>
+                  </ul>
+                </div>
+                <div>
+                  <div class="font-semibold text-purple-800 mb-1">중장기 대책</div>
+                  <ul class="list-disc ml-5 space-y-1 text-gray-700">
+                    <li>매일 아침 10분 책 읽기 운동</li>
+                    <li>학년별 추천 도서 리스트 운영</li>
+                    <li>가정 독서 인증 프로그램</li>
+                    <li>문해력 격차 예방을 위한 학년 연계</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 행정·시스템 대책 -->
+        <div class="bg-white rounded-2xl p-6 shadow-sm">
+          <h2 class="text-xl font-bold text-gray-800 mb-4">🏛️ 학교 차원 행정·시스템 대책</h2>
+          <div class="grid md:grid-cols-2 gap-4">
+            <div class="bg-indigo-50 rounded-xl p-5">
+              <h3 class="font-bold text-indigo-700 mb-3">📋 운영 체계 구축</h3>
+              <ul class="space-y-2 text-sm text-gray-700">
+                <li class="flex gap-2"><span>✓</span>기초학력 책임지도제 구성 (교감 총괄)</li>
+                <li class="flex gap-2"><span>✓</span>학생별 개별 학습지원 카드 작성</li>
+                <li class="flex gap-2"><span>✓</span>월 1회 학력 향상 협의회 개최</li>
+                <li class="flex gap-2"><span>✓</span>담임-교과-학부모 3자 연계 체계</li>
+                <li class="flex gap-2"><span>✓</span>외부 학습 지원 기관 MOU 체결</li>
+              </ul>
+            </div>
+            <div class="bg-green-50 rounded-xl p-5">
+              <h3 class="font-bold text-green-700 mb-3">💻 에듀테크 활용</h3>
+              <ul class="space-y-2 text-sm text-gray-700">
+                <li class="flex gap-2"><span>✓</span>"오성 연산 마스터" 전교생 필수 활용</li>
+                <li class="flex gap-2"><span>✓</span>"English Quest" 영어 부진 학생 적용</li>
+                <li class="flex gap-2"><span>✓</span>"올바른 언어생활" 문해력 향상 활용</li>
+                <li class="flex gap-2"><span>✓</span>학습 데이터 대시보드 주간 모니터링</li>
+                <li class="flex gap-2"><span>✓</span>AI 튜터 활용 가정 학습 지원</li>
+              </ul>
+            </div>
+            <div class="bg-yellow-50 rounded-xl p-5">
+              <h3 class="font-bold text-yellow-700 mb-3">💰 예산·자원 확보</h3>
+              <ul class="space-y-2 text-sm text-gray-700">
+                <li class="flex gap-2"><span>✓</span>기초학력 향상 지원 특별 예산 편성</li>
+                <li class="flex gap-2"><span>✓</span>학습 보조 강사 채용 (방과후)</li>
+                <li class="flex gap-2"><span>✓</span>보충 교재·학습 도구 구입</li>
+                <li class="flex gap-2"><span>✓</span>학부모 상담 및 교육 프로그램 운영</li>
+                <li class="flex gap-2"><span>✓</span>도교육청 학습지원 사업 연계</li>
+              </ul>
+            </div>
+            <div class="bg-pink-50 rounded-xl p-5">
+              <h3 class="font-bold text-pink-700 mb-3">📈 성과 관리</h3>
+              <ul class="space-y-2 text-sm text-gray-700">
+                <li class="flex gap-2"><span>✓</span>월별 개별 학생 진척도 추적</li>
+                <li class="flex gap-2"><span>✓</span>학기 말 재진단 평가 실시</li>
+                <li class="flex gap-2"><span>✓</span>프로그램 효과성 분석 리포트</li>
+                <li class="flex gap-2"><span>✓</span>우수 사례 공유 및 피드백</li>
+                <li class="flex gap-2"><span>✓</span>연말 종합 성과 평가회</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- 일정표 -->
+        <div class="bg-white rounded-2xl p-6 shadow-sm">
+          <h2 class="text-xl font-bold text-gray-800 mb-4">📅 연간 운영 일정 (로드맵)</h2>
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead class="bg-gray-100">
+                <tr>
+                  <th class="px-4 py-3 text-left font-semibold text-gray-700">시기</th>
+                  <th class="px-4 py-3 text-left font-semibold text-gray-700">주요 활동</th>
+                  <th class="px-4 py-3 text-left font-semibold text-gray-700">담당</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y">
+                <tr><td class="px-4 py-3 font-medium text-indigo-600">3월</td><td class="px-4 py-3">진단평가 결과 분석·공유, 개별 학습지원 카드 작성, 학부모 안내</td><td class="px-4 py-3 text-gray-600">교감, 담임, 교과교사</td></tr>
+                <tr><td class="px-4 py-3 font-medium text-indigo-600">4월</td><td class="px-4 py-3">Tier별 프로그램 시작, 에듀테크 도구 투입, 멘토링 매칭</td><td class="px-4 py-3 text-gray-600">교과교사, 방과후 강사</td></tr>
+                <tr><td class="px-4 py-3 font-medium text-indigo-600">5월</td><td class="px-4 py-3">1차 진척도 점검, 프로그램 조정, 학부모 상담</td><td class="px-4 py-3 text-gray-600">담임, 교감</td></tr>
+                <tr><td class="px-4 py-3 font-medium text-indigo-600">7월</td><td class="px-4 py-3">1학기 재진단 평가, 성과 분석 리포트 작성</td><td class="px-4 py-3 text-gray-600">교감, 학력향상협의회</td></tr>
+                <tr><td class="px-4 py-3 font-medium text-indigo-600">9월</td><td class="px-4 py-3">2학기 대책 재수립, 신규 미달자 긴급 투입</td><td class="px-4 py-3 text-gray-600">전 교직원</td></tr>
+                <tr><td class="px-4 py-3 font-medium text-indigo-600">11월</td><td class="px-4 py-3">2차 진척도 점검, 고입 연계 지원 (3학년)</td><td class="px-4 py-3 text-gray-600">3학년 담임, 교감</td></tr>
+                <tr><td class="px-4 py-3 font-medium text-indigo-600">12월</td><td class="px-4 py-3">최종 재진단, 연간 성과 평가, 차년도 계획 수립</td><td class="px-4 py-3 text-gray-600">전 교직원, 운영위원회</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="mt-10 py-6 border-t border-gray-200 no-print">
+    <div class="max-w-7xl mx-auto px-4 text-center text-sm text-gray-500">
+      <p>© 2026 오성중학교 | 2026학년도 기초학력 진단평가 분석 대시보드</p>
+      <p class="mt-1">Developed by <span class="font-semibold text-indigo-600">K.G.B</span> | 오성 바이브코딩 에듀허브</p>
+      <p class="mt-1 text-xs text-gray-400">🔒 개인정보 보호를 위해 이 대시보드의 내용은 외부로 유출되지 않도록 주의해 주세요.</p>
+    </div>
+  </footer>
+</div>
+
+<script>
+// ==================== 데이터 정의 ====================
+const DATA = {
+  school: "오성중학교",
+  totalStudents: 102,
+  year: 2026,
+  classes: ["1-1", "1-2", "2-1", "2-2", "3-1", "3-2"],
+  
+  // 기초학력 진단고사 (교과)
+  academic: {
+    국어: { count: 3, percentage: 2.9, color: "#8b5cf6" },
+    수학: { count: 9, percentage: 8.8, color: "#ef4444" },
+    영어: { count: 6, percentage: 5.8, color: "#f59e0b" }
+  },
+  
+  // 3R's 평가 (기초 문해·수리)
+  threeRs: {
+    읽기: { count: 2, percentage: 1.9, color: "#06b6d4" },
+    쓰기: { count: 4, percentage: 3.9, color: "#10b981" },
+    셈하기: { count: 10, percentage: 9.8, color: "#dc2626" }
+  },
+  
+  // 학생별 통합 데이터
+  students: [
+    // 기초학력 진단고사
+    { name: "한다윤", class: "1-1", grade: 1, areas: ["국어", "영어"], type: "academic" },
+    { name: "안소윤", class: "2-1", grade: 2, areas: ["수학", "영어"], type: "academic" },
+    { name: "김현웅", class: "2-1", grade: 2, areas: ["수학", "영어"], type: "academic" },
+    { name: "최준영", class: "2-1", grade: 2, areas: ["수학"], type: "academic" },
+    { name: "정해담", class: "2-1", grade: 2, areas: ["영어"], type: "academic" },
+    { name: "정영민", class: "2-2", grade: 2, areas: ["국어", "영어"], type: "academic" },
+    { name: "한준희", class: "2-2", grade: 2, areas: ["국어", "수학"], type: "academic" },
+    { name: "이예연", class: "2-2", grade: 2, areas: ["수학"], type: "academic" },
+    { name: "김세훈", class: "2-2", grade: 2, areas: ["수학"], type: "academic" },
+    { name: "신서겸", class: "3-1", grade: 3, areas: ["수학"], type: "academic" },
+    { name: "김주원", class: "3-1", grade: 3, areas: ["수학"], type: "academic" },
+    { name: "김아민", class: "3-1", grade: 3, areas: ["영어"], type: "academic" },
+    { name: "지현우", class: "3-2", grade: 3, areas: ["수학"], type: "academic" },
+    
+    // 3R's 평가
+    { name: "김민율", class: "1-1", grade: 1, areas: ["읽기"], type: "3rs" },
+    { name: "김가영", class: "1-1", grade: 1, areas: ["쓰기", "셈하기"], type: "3rs" },
+    { name: "민혜빈", class: "1-1", grade: 1, areas: ["셈하기"], type: "3rs" },
+    { name: "봉예원", class: "2-1", grade: 2, areas: ["쓰기", "셈하기"], type: "3rs" },
+    { name: "이진욱", class: "2-1", grade: 2, areas: ["쓰기", "셈하기"], type: "3rs" },
+    { name: "양서율", class: "2-2", grade: 2, areas: ["셈하기"], type: "3rs" },
+    { name: "김가은", class: "3-1", grade: 3, areas: ["셈하기"], type: "3rs" },
+    { name: "허여준", class: "3-1", grade: 3, areas: ["셈하기"], type: "3rs" },
+    { name: "박윤호", class: "3-2", grade: 3, areas: ["읽기", "쓰기", "셈하기"], type: "3rs" },
+    { name: "한주형", class: "3-2", grade: 3, areas: ["셈하기"], type: "3rs" },
+    { name: "황은비", class: "3-2", grade: 3, areas: ["셈하기"], type: "3rs" }
+  ],
+  
+  excluded: [
+    { name: "서준호", grade: 2 },
+    { name: "정날린", grade: 3 },
+    { name: "양대원", grade: 3 }
+  ]
+};
+
+const AREA_COLORS = {
+  국어: "badge-purple", 수학: "badge-red", 영어: "badge-orange",
+  읽기: "badge-blue", 쓰기: "badge-green", 셈하기: "badge-red"
+};
+const AREA_ICONS = {
+  국어: "📚", 수학: "🧮", 영어: "🌐",
+  읽기: "👁️", 쓰기: "✍️", 셈하기: "🔢"
+};
+
+// ==================== 로그인 ====================
+const CORRECT_PASSWORD = "oseong2026";
+
+function checkLogin() {
+  const pwd = document.getElementById('passwordInput').value;
+  const errorMsg = document.getElementById('errorMsg');
+  
+  if (pwd === CORRECT_PASSWORD) {
+    sessionStorage.setItem('oseong_auth', 'true');
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('mainDashboard').classList.remove('hidden');
+    initDashboard();
+  } else {
+    errorMsg.textContent = "❌ 비밀번호가 올바르지 않습니다.";
+    errorMsg.classList.remove('hidden');
+    document.getElementById('passwordInput').value = '';
+    document.getElementById('passwordInput').focus();
+  }
+}
+
+function logout() {
+  sessionStorage.removeItem('oseong_auth');
+  location.reload();
+}
+
+// ==================== 인쇄 기능 ====================
+function togglePrintMenu() {
+  document.getElementById('printMenu').classList.toggle('hidden');
+}
+
+// 외부 클릭 시 메뉴 닫기
+document.addEventListener('click', (e) => {
+  const wrapper = document.getElementById('printMenuWrapper');
+  if (wrapper && !wrapper.contains(e.target)) {
+    document.getElementById('printMenu')?.classList.add('hidden');
+  }
+});
+
+// 인쇄일자 자동 설정
+function setPrintDate() {
+  const now = new Date();
+  const dateStr = `출력일: ${now.getFullYear()}년 ${now.getMonth()+1}월 ${now.getDate()}일`;
+  const el = document.getElementById('printDate');
+  if (el) el.textContent = dateStr;
+}
+
+// 현재 탭만 인쇄
+function printCurrentTab() {
+  document.getElementById('printMenu').classList.add('hidden');
+  document.body.classList.remove('print-all');
+  setPrintDate();
+  setTimeout(() => window.print(), 150);
+}
+
+// 전체 탭 인쇄 (종합 보고서)
+function printAllTabs() {
+  document.getElementById('printMenu').classList.add('hidden');
+  document.body.classList.add('print-all');
+  setPrintDate();
+  // 차트가 모두 렌더링된 상태에서 인쇄하도록 약간 지연
+  setTimeout(() => {
+    window.print();
+    // 인쇄 후 원래 상태로 복원
+    setTimeout(() => document.body.classList.remove('print-all'), 500);
+  }, 300);
+}
+
+// 페이지 로드 시 인증 상태 확인
+window.addEventListener('DOMContentLoaded', () => {
+  if (sessionStorage.getItem('oseong_auth') === 'true') {
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('mainDashboard').classList.remove('hidden');
+    initDashboard();
+  } else {
+    document.getElementById('passwordInput').focus();
+  }
+});
+
+// ==================== 대시보드 초기화 ====================
+function initDashboard() {
+  renderOverview();
+  renderClassTab();
+  renderSubjectTab();
+  renderStudents();
+  renderInsights();
+}
+
+// 탭 전환
+function switchTab(tabName) {
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.add('hidden'));
+  document.querySelectorAll('.tab-btn').forEach(b => {
+    b.classList.remove('tab-active');
+    b.classList.add('bg-gray-100', 'text-gray-700');
+  });
+  document.getElementById(`tab-${tabName}`).classList.remove('hidden');
+  const activeBtn = document.querySelector(`[data-tab="${tabName}"]`);
+  activeBtn.classList.add('tab-active');
+  activeBtn.classList.remove('bg-gray-100', 'text-gray-700');
+}
+
+// ==================== 종합 현황 렌더링 ====================
+function renderOverview() {
+  // 중복 지원 필요 학생 계산
+  const duplicateStudents = DATA.students.filter(s => s.areas.length >= 2);
+  document.getElementById('duplicateCount').innerHTML = duplicateStudents.length + '<span class="text-base text-gray-400">명</span>';
+  
+  // 영역별 미달 학생 수 차트
+  const overviewCtx = document.getElementById('overviewChart').getContext('2d');
+  new Chart(overviewCtx, {
+    type: 'bar',
+    data: {
+      labels: ['국어', '수학', '영어', '읽기', '쓰기', '셈하기'],
+      datasets: [{
+        label: '미달 학생 수',
+        data: [3, 9, 6, 2, 4, 10],
+        backgroundColor: ['#8b5cf6', '#ef4444', '#f59e0b', '#06b6d4', '#10b981', '#dc2626'],
+        borderRadius: 8
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: { y: { beginAtZero: true, ticks: { stepSize: 2 } } }
+    }
+  });
+  
+  // 학급별 차트
+  const classData = {};
+  DATA.classes.forEach(c => classData[c] = 0);
+  DATA.students.forEach(s => classData[s.class]++);
+  
+  const classCtx = document.getElementById('classChart').getContext('2d');
+  new Chart(classCtx, {
+    type: 'bar',
+    data: {
+      labels: Object.keys(classData),
+      datasets: [{
+        label: '학급별 미달 학생 수',
+        data: Object.values(classData),
+        backgroundColor: ['#3b82f6', '#60a5fa', '#10b981', '#34d399', '#f59e0b', '#fbbf24'],
+        borderRadius: 8
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: { y: { beginAtZero: true } }
+    }
+  });
+}
+
+// ==================== 학급별 분석 렌더링 ====================
+function renderClassTab() {
+  // 상세 차트 (스택 차트)
+  const academicData = {};
+  const threeRsData = {};
+  DATA.classes.forEach(c => { academicData[c] = 0; threeRsData[c] = 0; });
+  DATA.students.forEach(s => {
+    if (s.type === 'academic') academicData[s.class]++;
+    else threeRsData[s.class]++;
+  });
+  
+  const classDetailCtx = document.getElementById('classDetailChart').getContext('2d');
+  new Chart(classDetailCtx, {
+    type: 'bar',
+    data: {
+      labels: DATA.classes,
+      datasets: [
+        {
+          label: '기초학력 진단고사 미달 (국·수·영)',
+          data: Object.values(academicData),
+          backgroundColor: '#f59e0b',
+          borderRadius: 8
+        },
+        {
+          label: "3R's 평가 미달 (읽·쓰·셈)",
+          data: Object.values(threeRsData),
+          backgroundColor: '#ef4444',
+          borderRadius: 8
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: { 
+        y: { beginAtZero: true, stacked: true },
+        x: { stacked: true }
+      },
+      plugins: { legend: { position: 'top' } }
+    }
+  });
+  
+  // 학급별 카드
+  const classCards = document.getElementById('classCards');
+  classCards.innerHTML = '';
+  
+  DATA.classes.forEach(className => {
+    const classStudents = DATA.students.filter(s => s.class === className);
+    const grade = className.split('-')[0];
+    const gradeColors = {
+      '1': 'from-blue-400 to-blue-600',
+      '2': 'from-green-400 to-green-600',
+      '3': 'from-purple-400 to-purple-600'
+    };
+    
+    const card = document.createElement('div');
+    card.className = 'bg-white rounded-2xl shadow-sm overflow-hidden card-hover';
+    card.innerHTML = `
+      <div class="bg-gradient-to-r ${gradeColors[grade]} text-white p-5">
+        <div class="flex items-center justify-between">
+          <div>
+            <h3 class="text-xl font-bold">${className}반</h3>
+            <p class="text-sm opacity-90 mt-1">미달 학생 ${classStudents.length}명</p>
+          </div>
+          <div class="text-3xl font-bold">${classStudents.length}</div>
+        </div>
+      </div>
+      <div class="p-5">
+        ${classStudents.length === 0 ? 
+          '<p class="text-sm text-green-600 font-medium">✅ 미달 학생 없음</p>' :
+          `<div class="space-y-2">
+            ${classStudents.map(s => `
+              <div class="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
+                <span class="text-sm font-medium text-gray-700">${s.name}</span>
+                <div class="flex gap-1 flex-wrap">
+                  ${s.areas.map(a => `<span class="${AREA_COLORS[a]} text-xs px-2 py-0.5 rounded-full">${AREA_ICONS[a]} ${a}</span>`).join('')}
+                </div>
+              </div>
+            `).join('')}
+          </div>`
+        }
+      </div>
+    `;
+    classCards.appendChild(card);
+  });
+}
+
+// ==================== 교과별 분석 렌더링 ====================
+function renderSubjectTab() {
+  // 기초학력 진단고사 차트
+  const academicCtx = document.getElementById('subjectAcademicChart').getContext('2d');
+  new Chart(academicCtx, {
+    type: 'doughnut',
+    data: {
+      labels: ['국어', '수학', '영어'],
+      datasets: [{
+        data: [3, 9, 6],
+        backgroundColor: ['#8b5cf6', '#ef4444', '#f59e0b'],
+        borderWidth: 3,
+        borderColor: '#fff'
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { position: 'bottom' } }
+    }
+  });
+  
+  // 3R's 차트
+  const threersCtx = document.getElementById('subject3rsChart').getContext('2d');
+  new Chart(threersCtx, {
+    type: 'doughnut',
+    data: {
+      labels: ['읽기', '쓰기', '셈하기'],
+      datasets: [{
+        data: [2, 4, 10],
+        backgroundColor: ['#06b6d4', '#10b981', '#dc2626'],
+        borderWidth: 3,
+        borderColor: '#fff'
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { position: 'bottom' } }
+    }
+  });
+  
+  // 교과별 상세 카드
+  const subjectCards = document.getElementById('subjectCards');
+  subjectCards.innerHTML = '';
+  
+  const allSubjects = [
+    { name: '국어', color: 'purple', data: DATA.academic.국어, type: 'academic' },
+    { name: '수학', color: 'red', data: DATA.academic.수학, type: 'academic' },
+    { name: '영어', color: 'orange', data: DATA.academic.영어, type: 'academic' },
+    { name: '읽기', color: 'cyan', data: DATA.threeRs.읽기, type: '3rs' },
+    { name: '쓰기', color: 'green', data: DATA.threeRs.쓰기, type: '3rs' },
+    { name: '셈하기', color: 'red', data: DATA.threeRs.셈하기, type: '3rs' }
+  ];
+  
+  allSubjects.forEach(subject => {
+    const students = DATA.students.filter(s => s.areas.includes(subject.name));
+    const card = document.createElement('div');
+    card.className = 'bg-white rounded-2xl shadow-sm overflow-hidden';
+    card.innerHTML = `
+      <div class="p-5 border-b">
+        <div class="flex items-center justify-between mb-2">
+          <h3 class="text-lg font-bold text-gray-800">${AREA_ICONS[subject.name]} ${subject.name}</h3>
+          <span class="${AREA_COLORS[subject.name]} px-3 py-1 rounded-full text-sm font-semibold">${students.length}명</span>
+        </div>
+        <p class="text-xs text-gray-500">전체의 ${subject.data.percentage}% | ${subject.type === 'academic' ? '기초학력 진단고사' : "3R's 평가"}</p>
+      </div>
+      <div class="p-5">
+        <div class="space-y-1.5">
+          ${students.map(s => `
+            <div class="flex items-center justify-between p-2 bg-gray-50 rounded-lg text-sm">
+              <span class="font-medium text-gray-700">${s.name}</span>
+              <span class="text-xs text-gray-500">${s.class}반</span>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+    subjectCards.appendChild(card);
+  });
+}
+
+// ==================== 학생별 분석 렌더링 ====================
+function renderStudents() {
+  const typeFilter = document.getElementById('studentFilter').value;
+  const gradeFilter = document.getElementById('gradeFilter').value;
+  
+  // 학생별 통합 (같은 이름은 합치기)
+  const studentMap = {};
+  DATA.students.forEach(s => {
+    const key = `${s.name}_${s.class}`;
+    if (!studentMap[key]) {
+      studentMap[key] = { name: s.name, class: s.class, grade: s.grade, areas: [], types: [] };
+    }
+    studentMap[key].areas.push(...s.areas);
+    studentMap[key].types.push(s.type);
+  });
+  
+  // 중복 제거
+  Object.values(studentMap).forEach(s => {
+    s.areas = [...new Set(s.areas)];
+    s.types = [...new Set(s.types)];
+  });
+  
+  let filtered = Object.values(studentMap);
+  
+  // 필터 적용
+  if (typeFilter === 'critical') filtered = filtered.filter(s => s.areas.length >= 3);
+  else if (typeFilter === 'high') filtered = filtered.filter(s => s.areas.length === 2);
+  else if (typeFilter === 'single') filtered = filtered.filter(s => s.areas.length === 1);
+  
+  if (gradeFilter !== 'all') filtered = filtered.filter(s => s.grade == gradeFilter);
+  
+  // 우선순위 정렬 (영역 수 내림차순)
+  filtered.sort((a, b) => b.areas.length - a.areas.length);
+  
+  const container = document.getElementById('studentCards');
+  container.innerHTML = '';
+  
+  if (filtered.length === 0) {
+    container.innerHTML = '<div class="col-span-full text-center py-12 text-gray-500">해당 조건의 학생이 없습니다.</div>';
+    return;
+  }
+  
+  filtered.forEach(s => {
+    const priority = s.areas.length >= 3 ? 'critical' : s.areas.length === 2 ? 'high' : 'medium';
+    const priorityLabels = {
+      critical: { text: '최우선 Tier 3', color: 'badge-red' },
+      high: { text: '고위험 Tier 2', color: 'badge-orange' },
+      medium: { text: '일반 Tier 1', color: 'badge-yellow' }
+    };
+    
+    const card = document.createElement('div');
+    card.className = `bg-white rounded-2xl shadow-sm overflow-hidden card-hover priority-${priority}`;
+    card.innerHTML = `
+      <div class="p-5">
+        <div class="flex items-start justify-between mb-3">
+          <div>
+            <h3 class="text-lg font-bold text-gray-800">${s.name}</h3>
+            <p class="text-sm text-gray-500">${s.class}반 (${s.grade}학년)</p>
+          </div>
+          <span class="${priorityLabels[priority].color} text-xs px-2.5 py-1 rounded-full font-semibold">${priorityLabels[priority].text}</span>
+        </div>
+        <div class="mb-3">
+          <div class="text-xs text-gray-500 mb-1.5">미달 영역 (${s.areas.length}개)</div>
+          <div class="flex flex-wrap gap-1.5">
+            ${s.areas.map(a => `<span class="${AREA_COLORS[a]} text-xs px-2.5 py-1 rounded-full font-medium">${AREA_ICONS[a]} ${a}</span>`).join('')}
+          </div>
+        </div>
+        <div class="pt-3 border-t">
+          <div class="text-xs text-gray-500 mb-1">추천 지원 방식</div>
+          <div class="text-xs text-gray-700">${getRecommendation(s)}</div>
+        </div>
+      </div>
+    `;
+    container.appendChild(card);
+  });
+}
+
+function getRecommendation(student) {
+  const count = student.areas.length;
+  if (count >= 3) return '📌 1:1 집중 지도 + 개별교육계획(IEP) + 학부모 상담 + 외부 전문가 연계';
+  if (count === 2) return '📌 소집단 보충 학습 (주 2-3회) + 에듀테크 도구 활용 + 월별 진척도 점검';
+  return '📌 교실 내 개별 지도 + 수준별 과제 + 또래 멘토링';
+}
+
+// ==================== 교사 인사이트 렌더링 ====================
+function renderInsights() {
+  // 담임교사 인사이트
+  const homeroomInsights = document.getElementById('homeroomInsights');
+  homeroomInsights.innerHTML = '';
+  
+  DATA.classes.forEach(className => {
+    const students = DATA.students.filter(s => s.class === className);
+    const studentNames = [...new Set(students.map(s => s.name))];
+    
+    if (studentNames.length === 0) {
+      const div = document.createElement('div');
+      div.className = 'bg-green-50 rounded-xl p-5 border-l-4 border-green-500';
+      div.innerHTML = `
+        <div class="flex items-center justify-between mb-2">
+          <h3 class="font-bold text-green-700">${className}반 담임</h3>
+          <span class="badge-green text-xs px-2 py-1 rounded-full font-medium">우수</span>
+        </div>
+        <p class="text-sm text-gray-700">✨ 우수한 출발선! 기초학력 미달 학생이 없습니다. 현재 수업 방식을 유지하며, 중상위권 학생들의 심화 학습 기회를 확대하면 좋겠습니다.</p>
+      `;
+      homeroomInsights.appendChild(div);
+      return;
+    }
+    
+    const uniqueStudents = {};
+    students.forEach(s => {
+      if (!uniqueStudents[s.name]) uniqueStudents[s.name] = { areas: [] };
+      uniqueStudents[s.name].areas.push(...s.areas);
+    });
+    
+    const criticalCount = Object.values(uniqueStudents).filter(s => [...new Set(s.areas)].length >= 3).length;
+    const highCount = Object.values(uniqueStudents).filter(s => [...new Set(s.areas)].length === 2).length;
+    
+    const div = document.createElement('div');
+    const borderColor = criticalCount > 0 ? 'border-red-500 bg-red-50' : 
+                       highCount > 0 ? 'border-orange-500 bg-orange-50' : 'border-yellow-500 bg-yellow-50';
+    
+    div.className = `${borderColor} rounded-xl p-5 border-l-4`;
+    div.innerHTML = `
+      <div class="flex items-center justify-between mb-3">
+        <h3 class="font-bold text-gray-800">${className}반 담임 — ${studentNames.length}명 지원 필요</h3>
+        <div class="flex gap-1">
+          ${criticalCount > 0 ? `<span class="badge-red text-xs px-2 py-1 rounded-full font-medium">최우선 ${criticalCount}명</span>` : ''}
+          ${highCount > 0 ? `<span class="badge-orange text-xs px-2 py-1 rounded-full font-medium">고위험 ${highCount}명</span>` : ''}
+        </div>
+      </div>
+      <div class="space-y-2 mb-3">
+        ${Object.entries(uniqueStudents).map(([name, info]) => {
+          const unique = [...new Set(info.areas)];
+          return `<div class="bg-white rounded-lg p-2 flex items-center justify-between">
+            <span class="font-medium text-sm text-gray-700">${name}</span>
+            <div class="flex gap-1 flex-wrap">
+              ${unique.map(a => `<span class="${AREA_COLORS[a]} text-xs px-2 py-0.5 rounded-full">${AREA_ICONS[a]} ${a}</span>`).join('')}
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+      <div class="bg-white/80 rounded-lg p-3 text-sm text-gray-700">
+        <strong class="text-gray-800">💡 담임 선생님께:</strong> ${getHomeroomAdvice(className, studentNames.length, criticalCount, highCount)}
+      </div>
+    `;
+    homeroomInsights.appendChild(div);
+  });
+  
+  // 교과교사 인사이트
+  const subjectInsights = document.getElementById('subjectInsights');
+  subjectInsights.innerHTML = '';
+  
+  const subjects = [
+    { name: '국어', advice: '2-2반에 2명(정영민, 한준희)이 집중되어 있어 학급 특성을 고려한 보충 자료가 필요합니다. 음운 변동·문법 기초 진단을 선행하고, "올바른 언어생활" 자기주도 학습 앱을 연계하세요.' },
+    { name: '수학', advice: '⚠️ 최다 미달자 교과입니다. 2학년에 6명(2-1 3명, 2-2 3명)이 집중되어 있어 2학년 수학 보충반 편성을 강력 추천합니다. "오성 연산 마스터" 앱을 매일 15분 숙제로 부과하고, 초등 수학 연계 진단을 먼저 실시하세요.' },
+    { name: '영어', advice: '2-1반(3명)에 집중되어 있습니다. 알파벳·파닉스 기초 진단이 우선입니다. 교감 선생님이 개발한 "English Quest" 앱의 XP·뱃지 시스템으로 동기를 부여하고, Web Speech TTS로 듣기·말하기를 강화하세요.' },
+    { name: '읽기·쓰기', advice: '박윤호(3-2) 학생이 읽기+쓰기 동시 미달로 가장 시급합니다. 봉예원·이진욱(2-1)도 쓰기 미달로 관리가 필요합니다. 매일 아침 10분 책 읽기 + 한글 타자 연습 게임을 병행하세요.' },
+    { name: '셈하기', advice: '🚨 최다 미달 영역(10명)입니다. 전 학년 분포(1학년 2명, 2학년 3명, 3학년 5명)로 학교 차원 대책이 필수입니다. "오성 연산 마스터"를 전교생 필수 앱으로 운영하고, 초등 연계 기초 연산 진단을 우선 실시하세요.' }
+  ];
+  
+  subjects.forEach(s => {
+    const div = document.createElement('div');
+    div.className = 'bg-indigo-50 rounded-xl p-5 border-l-4 border-indigo-500';
+    div.innerHTML = `
+      <h3 class="font-bold text-indigo-700 mb-2">${AREA_ICONS[s.name.split('·')[0]] || '📚'} ${s.name} 교과교사</h3>
+      <p class="text-sm text-gray-700 leading-relaxed">${s.advice}</p>
+    `;
+    subjectInsights.appendChild(div);
+  });
+}
+
+function getHomeroomAdvice(className, count, critical, high) {
+  if (className === '3-2') return '⚠️ 3-2반은 박윤호 학생(3영역 미달)을 포함해 다수의 지원 대상이 있습니다. 주간 상담을 정례화하고, 교과 선생님들과 긴밀히 협력하여 통합적 학습 지원 체계를 만들어 주세요. 학부모 상담도 우선적으로 진행해 주세요.';
+  if (className === '2-1') return '수학+영어 중복 미달자(안소윤, 김현웅)가 있어 집중 관리가 필요합니다. 학급 내 또래 멘토링을 활성화하고, 쓰기·셈하기 미달자(봉예원, 이진욱)의 기초 학습 태도 형성을 우선 점검해 주세요.';
+  if (className === '2-2') return '2-2반은 국어+수학(한준희), 국어+영어(정영민) 중복 미달자가 있어 국어 교과의 기초 문해력 점검이 선행되어야 합니다. 학부모 상담에서 가정 학습 습관을 함께 논의해 주세요.';
+  if (className === '3-1') return '3학년은 고입 준비와 연결되므로 더욱 세심한 관리가 필요합니다. 수학 3명(신서겸, 김주원 + 셈하기 김가은·허여준)의 연산 기초를 철저히 점검하고, 진로와 연계된 학습 동기 부여를 해주세요.';
+  if (className === '1-1') return '중학교 적응기인 1학년은 학습 태도 형성이 중요합니다. 한다윤(국어·영어), 김민율(읽기), 김가영·민혜빈(셈하기) 등 다양한 유형이 있어 개별 특성 파악이 우선입니다. 학습 자신감 회복에 중점을 두세요.';
+  return '정기적 개별 상담과 교과 협력을 통해 학생들의 성장을 지원해 주세요.';
+}
+</script>
+
+</body>
+</html>
