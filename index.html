@@ -106,12 +106,7 @@ header.main .meta {
   margin-top: 8px; font-weight: 400;
 }
 header.main .meta span strong { color: var(--ink-900); font-weight: 600; }
-header.main .logout {
-  position: absolute; top: 32px; right: 0;
-  background: transparent; border: 1px solid var(--line); color: var(--ink-500);
-  padding: 6px 14px; font-size: 12px; cursor: pointer; border-radius: 2px;
-}
-header.main .logout:hover { background: var(--ink-900); color: var(--paper); border-color: var(--ink-900); }
+/* header-actions: see above */
 
 /* ===== TABS ===== */
 .tabs {
@@ -296,17 +291,124 @@ footer.main .credit {
   letter-spacing: 2px; margin-bottom: 4px;
 }
 
-/* Print */
-@media print {
-  .tabs, header.main .logout, #loginScreen { display: none !important; }
-  .panel { display: block !important; page-break-after: always; }
-  body { background: white; }
+/* Print Button */
+header.main .header-actions {
+  position: absolute; top: 32px; right: 0; display: flex; gap: 8px;
 }
+header.main .header-actions button {
+  background: transparent; border: 1px solid var(--line); color: var(--ink-500);
+  padding: 6px 14px; font-size: 12px; cursor: pointer; border-radius: 2px;
+  font-family: inherit; transition: all 0.2s;
+}
+header.main .header-actions button:hover { background: var(--ink-900); color: var(--paper); border-color: var(--ink-900); }
+
+/* Print Modal */
+.print-overlay {
+  position: fixed; inset: 0; z-index: 2000;
+  background: rgba(11,29,42,0.6); backdrop-filter: blur(3px);
+  display: flex; align-items: center; justify-content: center;
+}
+.print-overlay.hidden { display: none; }
+.print-modal {
+  background: var(--paper); border: 1px solid var(--line);
+  border-radius: 4px; padding: 32px 36px; max-width: 480px; width: 90%;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+}
+.print-modal h3 {
+  font-family: 'Gowun Batang', serif; font-size: 20px; margin-bottom: 4px;
+}
+.print-modal .desc { font-size: 13px; color: var(--ink-500); margin-bottom: 20px; }
+.print-modal .check-group { margin-bottom: 20px; }
+.print-modal .check-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px; border-bottom: 1px solid var(--paper-2);
+  cursor: pointer; transition: background 0.15s;
+}
+.print-modal .check-item:hover { background: var(--paper-2); }
+.print-modal .check-item input[type="checkbox"] {
+  width: 18px; height: 18px; accent-color: var(--accent); cursor: pointer;
+}
+.print-modal .check-item label { cursor: pointer; font-size: 14px; flex: 1; }
+.print-modal .check-item label .num {
+  font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--gold); margin-right: 6px;
+}
+.print-modal .select-all {
+  font-size: 12px; color: var(--accent); cursor: pointer; text-decoration: underline;
+  background: none; border: none; font-family: inherit; margin-bottom: 12px;
+}
+.print-modal .btn-row { display: flex; gap: 10px; justify-content: flex-end; margin-top: 24px; }
+.print-modal .btn-row button {
+  padding: 10px 22px; font-size: 14px; font-weight: 600;
+  border: none; border-radius: 2px; cursor: pointer; font-family: inherit; transition: all 0.2s;
+}
+.print-modal .btn-cancel { background: var(--paper-2); color: var(--ink-700); }
+.print-modal .btn-cancel:hover { background: var(--line); }
+.print-modal .btn-print { background: var(--ink-900); color: var(--paper); }
+.print-modal .btn-print:hover { background: var(--accent); }
+
+/* Print styles */
+@media print {
+  /* Hide UI elements */
+  #loginScreen, .tabs, header.main .header-actions,
+  .print-overlay, .filter-bar, body::before { display: none !important; }
+
+  /* Reset backgrounds */
+  body { background: white !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .wrap { max-width: 100%; padding: 0; }
+
+  /* Print header */
+  header.main { border-bottom: 2px solid #000; padding: 16px 0 12px; }
+  header.main h1 { font-size: 28px; }
+  header.main .pretitle { font-size: 9px; }
+  header.main .meta { font-size: 11px; }
+
+  /* Show only selected panels */
+  .panel { display: none !important; }
+  .panel.print-target { display: block !important; }
+
+  /* Page breaks */
+  .panel.print-target { page-break-before: always; }
+  .panel.print-target:first-of-type { page-break-before: avoid; }
+  .card { break-inside: avoid; page-break-inside: avoid; }
+  .insight-box { break-inside: avoid; page-break-inside: avoid; }
+  .student-card { break-inside: avoid; }
+  .plan-step { break-inside: avoid; page-break-inside: avoid; }
+  table.data tr { break-inside: avoid; }
+
+  /* Clean up card styles */
+  .card, .insight-box, .stat { box-shadow: none !important; border: 1px solid #ccc; }
+  .student-card { box-shadow: none; }
+
+  /* Charts: reduce height for print */
+  .chart-box { height: 200px !important; }
+  .chart-box.tall { height: 250px !important; }
+
+  /* Grids: ensure side-by-side when possible */
+  .grid-2 { grid-template-columns: 1fr 1fr; }
+  .grid-3 { grid-template-columns: 1fr 1fr 1fr; }
+
+  /* Stats grid */
+  .stats-grid { grid-template-columns: repeat(3, 1fr); gap: 10px; }
+
+  /* Section title print marker */
+  .panel.print-target .section-title::before {
+    content: "📄 ";
+  }
+
+  /* Footer */
+  footer.main { page-break-before: avoid; border-top: 1px solid #ccc; margin-top: 20px; padding-top: 12px; }
+  footer.main .credit { font-size: 12px; }
+
+  /* Print date stamp */
+  .print-stamp { display: block !important; text-align: right; font-size: 10px; color: #999;
+    font-family: 'JetBrains Mono', monospace; margin-bottom: 8px; }
+}
+.print-stamp { display: none; }
 
 /* Responsive header */
 @media (max-width: 700px) {
   header.main h1 { font-size: 28px; }
-  header.main .logout { position: static; display: inline-block; margin-top: 12px; }
+  header.main .header-actions { position: static; margin-top: 12px; }
 }
 </style>
 </head>
@@ -341,8 +443,13 @@ footer.main .credit {
     <span>📅 <strong>보고일</strong> 2026.04.17</span>
     <span>🏫 <strong>오성중학교</strong> 6개 학급</span>
   </div>
-  <button class="logout" onclick="logout()">🔒 로그아웃</button>
+  <div class="header-actions">
+    <button onclick="openPrintModal()">🖨️ 인쇄</button>
+    <button onclick="logout()">🔒 로그아웃</button>
+  </div>
 </header>
+
+<div class="print-stamp" id="printStamp"></div>
 
 <nav class="tabs" id="tabs">
   <button class="tab active" onclick="switchTab('overview', this)"><span class="num">01</span>종합 현황</button>
@@ -970,6 +1077,46 @@ footer.main .credit {
 </footer>
 
 </div><!-- /.wrap -->
+
+<!-- ============ PRINT MODAL ============ -->
+<div class="print-overlay hidden" id="printModal" onclick="if(event.target===this)closePrintModal()">
+  <div class="print-modal">
+    <h3>🖨️ 인쇄 설정</h3>
+    <p class="desc">인쇄할 섹션을 선택하세요. 선택한 항목만 인쇄됩니다.</p>
+    <button class="select-all" onclick="toggleAllPrint()">전체 선택/해제</button>
+    <div class="check-group">
+      <div class="check-item" onclick="toggleCheck('prt-overview')">
+        <input type="checkbox" id="prt-overview" checked>
+        <label for="prt-overview"><span class="num">01</span> 종합 현황</label>
+      </div>
+      <div class="check-item" onclick="toggleCheck('prt-subjects')">
+        <input type="checkbox" id="prt-subjects" checked>
+        <label for="prt-subjects"><span class="num">02</span> 영역별 분석</label>
+      </div>
+      <div class="check-item" onclick="toggleCheck('prt-classes')">
+        <input type="checkbox" id="prt-classes" checked>
+        <label for="prt-classes"><span class="num">03</span> 학급별 분석</label>
+      </div>
+      <div class="check-item" onclick="toggleCheck('prt-students')">
+        <input type="checkbox" id="prt-students" checked>
+        <label for="prt-students"><span class="num">04</span> 학생 프로파일</label>
+      </div>
+      <div class="check-item" onclick="toggleCheck('prt-insights')">
+        <input type="checkbox" id="prt-insights" checked>
+        <label for="prt-insights"><span class="num">05</span> 교사 인사이트</label>
+      </div>
+      <div class="check-item" onclick="toggleCheck('prt-plans')">
+        <input type="checkbox" id="prt-plans" checked>
+        <label for="prt-plans"><span class="num">06</span> 향상 대책</label>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn-cancel" onclick="closePrintModal()">취소</button>
+      <button class="btn-print" onclick="executePrint()">🖨️ 인쇄하기</button>
+    </div>
+  </div>
+</div>
+
 </div><!-- /#dashboard -->
 
 <script>
@@ -1347,6 +1494,70 @@ function initAllCharts(){
       }
     });
   });
+}
+
+// ============ PRINT ============
+const PANEL_MAP = {
+  'prt-overview': 'panel-overview',
+  'prt-subjects': 'panel-subjects',
+  'prt-classes': 'panel-classes',
+  'prt-students': 'panel-students',
+  'prt-insights': 'panel-insights',
+  'prt-plans': 'panel-plans'
+};
+
+function openPrintModal(){
+  document.getElementById('printModal').classList.remove('hidden');
+}
+
+function closePrintModal(){
+  document.getElementById('printModal').classList.add('hidden');
+}
+
+function toggleCheck(id){
+  const cb = document.getElementById(id);
+  cb.checked = !cb.checked;
+}
+
+function toggleAllPrint(){
+  const boxes = document.querySelectorAll('.check-group input[type="checkbox"]');
+  const allChecked = [...boxes].every(b => b.checked);
+  boxes.forEach(b => b.checked = !allChecked);
+}
+
+function executePrint(){
+  // 1) 인쇄 일시 스탬프
+  const now = new Date();
+  const stamp = `인쇄일시: ${now.getFullYear()}.${String(now.getMonth()+1).padStart(2,'0')}.${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')} | 오성중학교 기초학력 진단평가 분석 대시보드`;
+  document.getElementById('printStamp').textContent = stamp;
+
+  // 2) 선택된 패널에 print-target 클래스 부여
+  Object.entries(PANEL_MAP).forEach(([checkId, panelId]) => {
+    const panel = document.getElementById(panelId);
+    const checked = document.getElementById(checkId).checked;
+    if (checked) {
+      panel.classList.add('print-target');
+    } else {
+      panel.classList.remove('print-target');
+    }
+  });
+
+  // 3) 선택 항목 없으면 경고
+  const anySelected = Object.keys(PANEL_MAP).some(id => document.getElementById(id).checked);
+  if (!anySelected){
+    alert('인쇄할 섹션을 1개 이상 선택해 주세요.');
+    return;
+  }
+
+  // 4) 모달 닫고 인쇄
+  closePrintModal();
+  setTimeout(() => {
+    window.print();
+    // 5) 인쇄 후 print-target 제거 (화면 복구)
+    setTimeout(() => {
+      document.querySelectorAll('.print-target').forEach(p => p.classList.remove('print-target'));
+    }, 500);
+  }, 300);
 }
 </script>
 
